@@ -15,15 +15,7 @@ const { Console, error } = require("console");
 
 // creat connection with mongodb
 app.use(express.json());
-app.use(cors(
-    // {
-    //     origin:["https://e-commerse-rosy.vercel.app/"],
-    //     methods:["POST","GET"],
-
-    //     credentials: true
-
-    // }
-));
+app.use(cors());
 mongoose.connect(process.env.MONGO_URI).then(()=>{
     console.log("monggose conneted");
 })
