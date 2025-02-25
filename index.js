@@ -376,7 +376,7 @@ app.use('/image',express.static('upload/images'))
 app.post("/upload",upload.single('product'),(req,res)=>{
     res.json({
         success:1,
-        image_url:`http://${req.hostname}/image/${req.file.filename}`
+        image_url:`https://${req.hostname}/image/${req.file.filename}`
     });
 });
 
