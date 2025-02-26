@@ -11,6 +11,7 @@ const cors = require("cors");
 const { type } = require("os");
 const { read } = require("fs");
 const { Console, error } = require("console");
+// Cloudinary configuration
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
@@ -67,86 +68,36 @@ const productSchema = new mongoose.Schema({
   const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
   module.exports = Product;
 
-  // Configure Cloudinary with your credentials
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Set up multer storage for Cloudinary
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'uploads', // Folder in Cloudinary to store files
-        format: async (req, file) => 'png', // Format of the image (optional, defaults to original format)
-        public_id: (req, file) => Date.now().toString(), // Unique filename for each file
-    },
-});
-
-const upload = multer({ storage: storage });
-
-// Endpoint to upload image to Cloudinary
-app.post("/upload", upload.single('product'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
+app.post('/addproduct',async (req,res)=>{
+    let products = await Product.find({});
+    let id;
+    if(products.length>0)
+    {
+        let last_product_array = products.slice(-1);
+        let last_product = last_product_array[0];
+        id = last_product.id+1;
     }
-    res.json({
-        success: 1,
-        image_url: req.file.path, // Cloudinary provides the URL for the uploaded image
+    else{
+        id=1;
+    }
+    const product = new Product({
+        id:id,
+        name:req.body.name,
+        image:req.body.image,
+        category:req.body.category,
+        new_price:req.body.new_price,
+        old_price:req.body.old_price,
+        date:req.body.date,
+        available:req.body.avilable ?? true, 
     });
+    console.log(product);
+    await product.save();
+    console.log("Saved");
+    res.json({
+        success:true,
+        name:req.body.name,
+    })
 })
-
-// Existing addproduct API modified for Cloudinary setup
-app.post('/addproduct', upload.single('productImage'), async (req, res) => {
-    try {
-        // Retrieve existing products to set the new product's ID
-        let products = await Product.find({});
-        let id;
-        if (products.length > 0) {
-            let last_product_array = products.slice(-1);
-            let last_product = last_product_array[0];
-            id = last_product.id + 1;
-        } else {
-            id = 1;
-        }
-
-        // Check if an image was uploaded
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: "No image uploaded" });
-        }
-
-        // Create new product
-        const product = new Product({
-            id: id,
-            name: req.body.name,
-            image: req.file.path,  // Use the Cloudinary URL from multer
-            category: req.body.category,
-            new_price: req.body.new_price,
-            old_price: req.body.old_price,
-            date: req.body.date || Date.now(),
-            available: req.body.available || true
-        });
-
-        // Save product to database
-        await product.save();
-        console.log("Product saved:", product);
-
-        // Respond with success and product details
-        res.json({
-            success: true,
-            product: {
-                id: product.id,
-                name: product.name,
-                image_url: product.image,  // Cloudinary image URL
-            }
-        });
-    } catch (error) {
-        console.error("Error in adding product:", error);
-        res.status(500).json({ success: false, error: 'Internal server error' });
-    }
-});
-
 
 
 // creating api for deleting products
@@ -410,6 +361,36 @@ app.listen(port,(error)=>
     else{
         console.log("Error :" + error);
     }
+})
+
+// Configure Cloudinary with your credentials
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Set up multer storage for Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'uploads', // Folder in Cloudinary to store files
+        format: async (req, file) => 'png', // Format of the image (optional, defaults to original format)
+        public_id: (req, file) => Date.now().toString(), // Unique filename for each file
+    },
+});
+
+const upload = multer({ storage: storage });
+
+// Endpoint to upload image to Cloudinary
+app.post("/upload", upload.single('product'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+    res.json({
+        success: 1,
+        image_url: req.file.path, // Cloudinary provides the URL for the uploaded image
+    });
 })
 
 // for search engine
